@@ -1,0 +1,244 @@
+version: '3.8'
+
+services:
+  # WordPress Service
+  wordpress:
+    image: wordpress:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db-wordpress
+      WORDPRESS_DB_USER: wp_user
+      WORDPRESS_DB_PASSWORD: wp_password
+      WORDPRESS_DB_NAME: wp_db
+    depends_on:
+      - db-wordpress
+
+  db-wordpress:
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wp_db
+      MYSQL_USER: wp_user
+      MYSQL_PASSWORD: wp_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - wp_data:/var/lib/mysql
+
+  # Magento Service
+  magento:
+    image: bitnami/magento:latest
+    restart: unless-stopped
+    ports:
+      - '8081:8080'
+      - '8444:8443'
+    environment:
+      - MAGENTO_HOST=8081-bajoski34-gettingstarte-g5t9cckosj0.ws-eu114.gitpod.io
+      - MAGENTO_DATABASE_HOST=db-magento
+      - MAGENTO_DATABASE_PORT_NUMBER=3306
+      - MAGENTO_DATABASE_USER=bn_magento
+      - MAGENTO_DATABASE_NAME=bitnami_magento
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT_NUMBER=9200
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+    depends_on:
+      - db-magento
+      - elasticsearch
+
+  db-magento:
+    image: docker.io/bitnami/mariadb:10.6
+    restart: unless-stopped
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=bn_magento
+      - MARIADB_DATABASE=bitnami_magento
+    volumes:
+      - magento_data:/bitnami/mariadb
+
+  elasticsearch:
+    image: docker.io/bitnami/elasticsearch:7
+    restart: unless-stopped
+    volumes:
+      - 'elasticsearch_data:/bitnami/elasticsearch/data'
+
+  # OpenCart Service
+  opencart:
+    image: docker.io/bitnami/opencart:4
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+      - "8443:8443"
+    environment:
+      - OPENCART_DATABASE_HOST=db-opencart
+      - OPENCART_DATABASE_PORT_NUMBER=3306
+      - OPENCART_DATABASE_USER=bn_opencart
+      - OPENCART_DATABASE_NAME=bitnami_opencart
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'opencart_src:/bitnami/opencart'
+      - 'opencart_storage_data:/bitnami/opencart_storage/'
+    depends_on:
+      - db-opencart
+
+  db-opencart:
+    image: docker.io/bitnami/mariadb:11.3
+    restart: unless-stopped
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=bn_opencart
+      - MARIADB_DATABASE=bitnami_opencart
+    volumes:
+      - opencart_data:/bitnami/mariadb
+
+  # Odoo Service
+  odoo:
+    image: docker.io/bitnami/odoo:15
+    restart: unless-stopped
+    ports:
+      - "8083:8069"
+    depends_on:
+      - db-odoo
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - ODOO_DATABASE_HOST=db-odoo
+      - ODOO_DATABASE_PORT_NUMBER=5432
+      - ODOO_DATABASE_USER=bn_odoo
+      - ODOO_DATABASE_NAME=bitnami_odoo
+
+  db-odoo:
+    image: docker.io/bitnami/postgresql:16
+    restart: unless-stopped
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - POSTGRESQL_USERNAME=bn_odoo
+      - POSTGRESQL_DATABASE=bitnami_odoo
+    volumes:
+      - odoo_data:/bitnami/postgresql
+
+  # Prestashop Service
+  prestashop:
+    container_name: prestashop
+    image: prestashop/prestashop:latest
+    restart: unless-stopped
+    ports:
+      - '8084:80'
+    environment:
+      DB_SERVER: db-prestashop
+      DB_NAME: prestashop
+      DB_USER: root
+      DB_PASSWD: admin
+      PS_DOMAIN: 8084-bajoski34-gettingstarte-g5t9cckosj0.ws-eu114.gitpod.io
+      PS_FOLDER_ADMIN: admin2016
+      PS_FOLDER_INSTALL: install2016
+    volumes:
+      - 'prestashop_src:/bitnami/prestashop'
+    depends_on:
+      - db-prestashop
+
+  db-prestashop:
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: prestashop
+    volumes:
+      - 'prestashop_data:/bitnami/mariadb'
+
+  # Moodle Service
+  moodle:
+    image: docker.io/bitnami/moodle:4.4
+    restart: unless-stopped
+    ports:
+      - '8085:8080'
+      - '8446:8443'
+    environment:
+      - MOODLE_DATABASE_HOST=db-moodle
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=bn_moodle
+      - MOODLE_DATABASE_NAME=bitnami_moodle
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'moodle_src:/bitnami/moodle'
+      - 'moodle_storage_data:/bitnami/moodledata'
+    depends_on:
+      - db-moodle
+
+  db-moodle:
+    image: docker.io/bitnami/mariadb:11.3
+    restart: unless-stopped
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=bn_moodle
+      - MARIADB_DATABASE=bitnami_moodle
+      - MARIADB_CHARACTER_SET=utf8mb4
+      - MARIADB_COLLATE=utf8mb4_unicode_ci
+    volumes:
+      - 'moodle_data:/bitnami/mariadb'
+
+  # Joomla Service
+  joomla:
+    image: docker.io/bitnami/joomla:5
+    restart: unless-stopped
+    ports:
+      - '8086:8080'
+      - '8447:8443'
+    environment:
+      - JOOMLA_DATABASE_HOST=db-joomla
+      - JOOMLA_DATABASE_PORT_NUMBER=3306
+      - JOOMLA_DATABASE_USER=bn_joomla
+      - JOOMLA_DATABASE_NAME=bitnami_joomla
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'joomla_src:/bitnami/joomla'
+    depends_on:
+      - db-joomla
+
+  db-joomla:
+    image: docker.io/bitnami/mariadb:11.3
+    restart: unless-stopped
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=bn_joomla
+      - MARIADB_DATABASE=bitnami_joomla
+    volumes:
+      - 'joomla_data:/bitnami/mariadb'
+
+volumes:
+  wp_data:
+    driver: local
+  magento_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  opencart_src:
+    driver: local
+  opencart_storage_data:
+    driver: local
+  opencart_data:
+    driver: local
+  odoo_data:
+  prestashop_src:
+    driver: local
+  prestashop_data:
+    driver: local
+  moodle_src:
+    driver: local
+  moodle_storage_data:
+    driver: local
+  moodle_data:
+    driver: local
+  joomla_src:
+    driver: local
+  joomla_data:
+    driver: local
